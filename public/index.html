@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f1e8">
+  <meta name="description" content="Chuyển clipboard và tệp an toàn giữa các thiết bị trong mạng LAN.">
+  <title>Chuyền — LAN Clipboard</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Chuyền, về trang chính">
+      <span class="brand-mark">C</span>
+      <span>Chuyền</span>
+    </a>
+    <div class="header-right" id="app-actions" hidden>
+      <span class="live-pill"><i></i> Cùng mạng</span>
+      <button class="ghost-button" id="pair-button" type="button">Ghép thiết bị</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="gate" id="gate" aria-labelledby="gate-title">
+      <div class="gate-copy">
+        <p class="eyebrow">LAN Clipboard + QR Transfer</p>
+        <h1 id="gate-title">Chuyển nhanh.<br>Không qua đám mây.</h1>
+        <p>Văn bản và tệp đi thẳng trong Wi‑Fi nhà bạn. Mỗi thiết bị mới phải được ghép bằng mã riêng.</p>
+      </div>
+      <div class="gate-card" id="claim-panel" hidden>
+        <span class="step">Thiết bị đầu tiên</span>
+        <h2>Khởi tạo không gian</h2>
+        <p>Thiết bị này sẽ nhận mã ghép nối và có thể thêm các thiết bị khác bằng QR.</p>
+        <button class="primary-button full" id="claim-button" type="button">Khởi tạo an toàn</button>
+      </div>
+      <form class="gate-card" id="login-panel" hidden>
+        <span class="step">Thiết bị mới</span>
+        <h2>Nhập mã ghép nối</h2>
+        <p>Lấy mã từ nút “Ghép thiết bị” trên một thiết bị đã kết nối.</p>
+        <label for="key-input">Mã ghép nối</label>
+        <input id="key-input" autocomplete="off" autocapitalize="off" spellcheck="false" required placeholder="Nhập mã tại đây">
+        <button class="primary-button full" type="submit">Kết nối</button>
+        <p class="form-error" id="login-error"></p>
+      </form>
+    </section>
+
+    <div id="workspace" hidden>
+      <section class="hero">
+        <p class="eyebrow">Không gian chia sẻ riêng</p>
+        <h1>Đưa nội dung sang<br>thiết bị bên cạnh.</h1>
+        <p class="hero-note">Tự làm mới sau mỗi 3 giây · Tệp tối đa 25 MB</p>
+      </section>
+
+      <section class="composer-grid">
+        <article class="card clipboard-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Clipboard</p>
+              <h2>Gửi văn bản</h2>
+            </div>
+            <span class="counter" id="text-counter">0 / 8000</span>
+          </div>
+          <form id="clipboard-form">
+            <label class="sr-only" for="clipboard-input">Nội dung clipboard</label>
+            <textarea id="clipboard-input" maxlength="8000" placeholder="Dán link, đoạn mã hoặc ghi chú…" required></textarea>
+            <div class="form-actions">
+              <button class="secondary-button" id="paste-button" type="button">Dán từ máy này</button>
+              <button class="primary-button" type="submit">Gửi vào LAN</button>
+            </div>
+          </form>
+        </article>
+
+        <article class="card drop-card" id="drop-zone">
+          <input id="file-input" type="file" multiple hidden>
+          <div class="drop-icon" aria-hidden="true">↑</div>
+          <p class="eyebrow">QR Transfer</p>
+          <h2>Thả tệp vào đây</h2>
+          <p>Hoặc chọn tệp từ thiết bị. Dữ liệu được lưu trên điện thoại HomeDroid.</p>
+          <button class="secondary-button" id="choose-files" type="button">Chọn tệp</button>
+          <div class="upload-progress" id="upload-progress" hidden><i></i><span>Đang tải lên…</span></div>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <article class="card content-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Gần đây</p>
+              <h2>Clipboard chung</h2>
+            </div>
+            <span class="count-pill" id="clip-count">0 mục</span>
+          </div>
+          <div class="empty" id="clips-empty">Chưa có nội dung. Gửi đoạn đầu tiên từ thiết bị này.</div>
+          <ul class="clip-list" id="clip-list"></ul>
+        </article>
+
+        <article class="card content-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Kho tạm</p>
+              <h2>Tệp đã gửi</h2>
+            </div>
+            <span class="count-pill" id="file-count">0 tệp</span>
+          </div>
+          <div class="empty" id="files-empty">Chưa có tệp nào trong không gian này.</div>
+          <ul class="file-list" id="file-list"></ul>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <span>Chỉ dùng trong mạng tin cậy</span><i></i><span id="host-label"></span>
+  </footer>
+
+  <dialog id="pair-dialog">
+    <div class="pair-card">
+      <div class="card-heading">
+        <div><p class="eyebrow">Thiết bị mới</p><h2>Quét để ghép nối</h2></div>
+        <button class="close-button" id="close-pair" type="button" aria-label="Đóng">×</button>
+      </div>
+      <img id="qr-image" alt="Mã QR ghép nối thiết bị">
+      <p class="pair-help">Quét QR bằng thiết bị cùng Wi‑Fi, hoặc nhập mã:</p>
+      <button class="pair-code" id="copy-key" type="button"><code id="pair-key"></code><span>Chép mã</span></button>
+      <p class="security-note">Ai có mã này đều truy cập được clipboard và tệp. Không chia sẻ ra ngoài nhà.</p>
+      <button class="danger-button" id="rotate-key" type="button">Đổi mã và ngắt thiết bị khác</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
