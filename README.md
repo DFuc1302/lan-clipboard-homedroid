@@ -1,4 +1,4 @@
-# Chuyền — LAN Clipboard + QR Transfer
+# Transfer — LAN Clipboard + QR Transfer
 
 Transfer text and files between laptops, phones, and tablets on the same LAN. Data travels through the HomeDroid phone without using a cloud service.
 
