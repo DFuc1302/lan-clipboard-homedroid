@@ -106,15 +106,15 @@ export async function createLanClipboard({ dataDir = dataDirectory() } = {}) {
       if (req.method === "GET" && url.pathname === "/api/status") return json(res, 200, { claimed: Boolean(state.keyHash) });
 
       if (req.method === "POST" && url.pathname === "/api/claim") {
-        if (state.keyHash) return fail(res, 409, "Không gian đã được khởi tạo");
+        if (state.keyHash) return fail(res, 409, "This space has already been set up");
         const key = randomBytes(12).toString("base64url");
         state.keyHash = hashKey(key);
         await save();
         return json(res, 201, { key });
       }
 
-      if (!url.pathname.startsWith("/api/") && !url.pathname.startsWith("/files/")) return fail(res, 404, "Không tìm thấy");
-      if (!authenticated(req)) return fail(res, 401, "Thiết bị chưa được ghép nối");
+      if (!url.pathname.startsWith("/api/") && !url.pathname.startsWith("/files/")) return fail(res, 404, "Not found");
+      if (!authenticated(req)) return fail(res, 401, "Device is not paired");
 
       if (req.method === "GET" && url.pathname === "/api/state") {
         return json(res, 200, { clips: state.clips, files: state.files });
@@ -123,8 +123,8 @@ export async function createLanClipboard({ dataDir = dataDirectory() } = {}) {
       if (req.method === "POST" && url.pathname === "/api/clipboard") {
         const body = await readJson(req);
         const text = String(body.text || "").trim();
-        if (!text) return fail(res, 400, "Nội dung đang trống");
-        if (text.length > 8000) return fail(res, 413, "Nội dung tối đa 8.000 ký tự");
+        if (!text) return fail(res, 400, "Content cannot be empty");
+        if (text.length > 8000) return fail(res, 413, "Content is limited to 8,000 characters");
         state.clips.unshift({ id: randomBytes(8).toString("hex"), text, createdAt: new Date().toISOString() });
         state.clips = state.clips.slice(0, MAX_CLIPS);
         await save();
@@ -140,7 +140,7 @@ export async function createLanClipboard({ dataDir = dataDirectory() } = {}) {
 
       if (req.method === "POST" && url.pathname === "/api/files") {
         const declared = Number(req.headers["content-length"] || 0);
-        if (declared > MAX_FILE) return fail(res, 413, "Tệp tối đa 25 MB");
+        if (declared > MAX_FILE) return fail(res, 413, "Files are limited to 25 MB");
         const id = randomBytes(12).toString("hex");
         const name = sanitizeFilename(url.searchParams.get("name"));
         const target = join(filesDir, id);
@@ -155,7 +155,7 @@ export async function createLanClipboard({ dataDir = dataDirectory() } = {}) {
           await pipeline(req, limiter, createWriteStream(target, { flags: "wx" }));
         } catch (error) {
           await rm(target, { force: true });
-          if (error.message === "file too large") return fail(res, 413, "Tệp tối đa 25 MB");
+          if (error.message === "file too large") return fail(res, 413, "Files are limited to 25 MB");
           throw error;
         }
         const item = { id, name, size: received, type: String(req.headers["content-type"] || "application/octet-stream").slice(0, 120), createdAt: new Date().toISOString() };
@@ -168,7 +168,7 @@ export async function createLanClipboard({ dataDir = dataDirectory() } = {}) {
       const fileMatch = url.pathname.match(/^\/files\/([a-f0-9]{24})$/);
       if (fileMatch) {
         const item = state.files.find((file) => file.id === fileMatch[1]);
-        if (!item) return fail(res, 404, "Không tìm thấy tệp");
+        if (!item) return fail(res, 404, "File not found");
         const target = join(filesDir, item.id);
         if (req.method === "DELETE") {
           await rm(target, { force: true });
@@ -191,7 +191,7 @@ export async function createLanClipboard({ dataDir = dataDirectory() } = {}) {
       if (req.method === "POST" && url.pathname === "/api/qr") {
         const body = await readJson(req);
         const origin = new URL(String(body.origin || ""));
-        if (origin.protocol !== "http:" && origin.protocol !== "https:") return fail(res, 400, "Địa chỉ không hợp lệ");
+        if (origin.protocol !== "http:" && origin.protocol !== "https:") return fail(res, 400, "Invalid address");
         const key = String(req.headers.authorization).slice(7);
         origin.searchParams.set("key", key);
         const image = await QRCode.toDataURL(origin.toString(), { width: 320, margin: 1, color: { dark: "#101820", light: "#ffffff" } });
@@ -205,10 +205,10 @@ export async function createLanClipboard({ dataDir = dataDirectory() } = {}) {
         return json(res, 200, { key });
       }
 
-      return fail(res, 404, "Không tìm thấy");
+      return fail(res, 404, "Not found");
     } catch (error) {
       console.error(error);
-      if (!res.headersSent) fail(res, 500, "Lỗi máy chủ");
+      if (!res.headersSent) fail(res, 500, "Server error");
       else res.destroy();
     }
   }

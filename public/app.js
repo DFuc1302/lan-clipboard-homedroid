@@ -38,7 +38,7 @@ async function api(path, options = {}) {
   const response = await fetch(path, { ...options, headers });
   const type = response.headers.get("content-type") || "";
   const body = type.includes("application/json") ? await response.json() : await response.blob();
-  if (!response.ok) throw new Error(body.error || "Yêu cầu thất bại");
+  if (!response.ok) throw new Error(body.error || "Request failed");
   return body;
 }
 
@@ -55,11 +55,11 @@ async function copyText(text) {
     document.execCommand("copy");
     area.remove();
   }
-  toast("Đã chép vào clipboard");
+  toast("Copied to clipboard");
 }
 
 function formatDate(value) {
-  return new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }).format(new Date(value));
+  return new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }).format(new Date(value));
 }
 
 function formatBytes(value) {
@@ -76,7 +76,7 @@ function fileExtension(name) {
 function renderClips(clips) {
   elements.clipList.replaceChildren();
   elements.clipsEmpty.hidden = clips.length > 0;
-  elements.clipCount.textContent = `${clips.length} mục`;
+  elements.clipCount.textContent = `${clips.length} items`;
   for (const clip of clips) {
     const item = document.createElement("li");
     item.className = "clip-item";
@@ -94,12 +94,12 @@ function renderClips(clips) {
     copy.className = "mini-button";
     copy.type = "button";
     copy.dataset.copy = "true";
-    copy.textContent = "Chép";
+    copy.textContent = "Copy";
     const remove = document.createElement("button");
     remove.className = "mini-button";
     remove.type = "button";
     remove.dataset.delete = "true";
-    remove.textContent = "Xóa";
+    remove.textContent = "Delete";
     actions.append(copy, remove);
     meta.append(time, actions);
     item.append(text, meta);
@@ -110,7 +110,7 @@ function renderClips(clips) {
 function renderFiles(files) {
   elements.fileList.replaceChildren();
   elements.filesEmpty.hidden = files.length > 0;
-  elements.fileCount.textContent = `${files.length} tệp`;
+  elements.fileCount.textContent = `${files.length} files`;
   for (const file of files) {
     const item = document.createElement("li");
     item.className = "file-item";
@@ -131,12 +131,12 @@ function renderFiles(files) {
     download.className = "mini-button";
     download.type = "button";
     download.dataset.download = "true";
-    download.textContent = "Tải";
+    download.textContent = "Download";
     const remove = document.createElement("button");
     remove.className = "mini-button";
     remove.type = "button";
     remove.dataset.delete = "true";
-    remove.textContent = "Xóa";
+    remove.textContent = "Delete";
     actions.append(download, remove);
     item.append(mark, copy, actions);
     elements.fileList.append(item);
@@ -149,7 +149,7 @@ async function refresh() {
     renderClips(state.clips);
     renderFiles(state.files);
   } catch (error) {
-    if (error.message.includes("ghép nối")) showGate(true);
+    if (error.message.includes("not paired")) showGate(true);
   }
 }
 
@@ -186,7 +186,7 @@ async function initialize() {
 }
 
 async function uploadFile(file) {
-  if (file.size > 25 * 1024 * 1024) throw new Error(`${file.name} vượt quá 25 MB`);
+  if (file.size > 25 * 1024 * 1024) throw new Error(`${file.name} exceeds 25 MB`);
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `/api/files?name=${encodeURIComponent(file.name)}`);
@@ -195,8 +195,8 @@ async function uploadFile(file) {
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) elements.uploadProgress.querySelector("i").style.width = `${event.loaded / event.total * 100}%`;
     };
-    xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error(JSON.parse(xhr.responseText).error || "Tải lên thất bại"));
-    xhr.onerror = () => reject(new Error("Mất kết nối khi tải lên"));
+    xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error(JSON.parse(xhr.responseText).error || "Upload failed"));
+    xhr.onerror = () => reject(new Error("Connection lost during upload"));
     xhr.send(file);
   });
 }
@@ -206,11 +206,11 @@ async function uploadFiles(files) {
   elements.uploadProgress.hidden = false;
   try {
     for (const file of files) {
-      elements.uploadProgress.querySelector("span").textContent = `Đang tải ${file.name}…`;
+      elements.uploadProgress.querySelector("span").textContent = `Uploading ${file.name}…`;
       elements.uploadProgress.querySelector("i").style.width = "0";
       await uploadFile(file);
     }
-    toast("Đã gửi tệp vào LAN");
+    toast("Files sent over LAN");
     await refresh();
   } catch (error) {
     toast(error.message);
@@ -256,13 +256,13 @@ elements.clipboardForm.addEventListener("submit", async (event) => {
     await api("/api/clipboard", { method: "POST", body: { text: elements.clipboardInput.value } });
     elements.clipboardInput.value = "";
     elements.textCounter.textContent = "0 / 8000";
-    toast("Đã gửi vào clipboard chung");
+    toast("Sent to shared clipboard");
     await refresh();
   } catch (error) { toast(error.message); }
 });
 elements.paste.addEventListener("click", async () => {
   try { elements.clipboardInput.value = await navigator.clipboard.readText(); elements.clipboardInput.dispatchEvent(new Event("input")); }
-  catch { toast("Trình duyệt không cho đọc clipboard trên HTTP"); }
+  catch { toast("The browser cannot read the clipboard over HTTP"); }
 });
 elements.clipList.addEventListener("click", async (event) => {
   const item = event.target.closest(".clip-item");
@@ -281,7 +281,7 @@ elements.fileList.addEventListener("click", async (event) => {
   if (event.target.matches("[data-delete]")) { await api(`/files/${item.dataset.id}`, { method: "DELETE" }); return refresh(); }
   if (event.target.matches("[data-download]")) {
     const response = await fetch(`/files/${item.dataset.id}`, { headers: { Authorization: `Bearer ${key}` } });
-    if (!response.ok) return toast("Không tải được tệp");
+    if (!response.ok) return toast("Could not download file");
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -299,7 +299,7 @@ elements.rotateKey.addEventListener("click", async () => {
   key = result.key;
   localStorage.setItem("chuyen.key", key);
   await openPairDialog();
-  toast("Đã đổi mã ghép nối");
+  toast("Pairing key changed");
 });
 
 initialize().catch(() => showGate(false));

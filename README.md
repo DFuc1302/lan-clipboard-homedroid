@@ -1,17 +1,17 @@
 # Chuyền — LAN Clipboard + QR Transfer
 
-Chuyển văn bản và tệp giữa laptop, điện thoại và tablet trong cùng mạng LAN. Dữ liệu đi qua điện thoại HomeDroid, không dùng dịch vụ đám mây.
+Transfer text and files between laptops, phones, and tablets on the same LAN. Data travels through the HomeDroid phone without using a cloud service.
 
-## Tính năng
+## Features
 
-- Clipboard chung, tối đa 30 mục và 8.000 ký tự mỗi mục.
-- Upload/download tệp tối đa 25 MB; kéo thả trên desktop.
-- Ghép thiết bị bằng QR hoặc mã ngẫu nhiên 96-bit.
-- API yêu cầu Bearer token; server chỉ lưu SHA-256 của mã ghép nối.
-- Đổi mã để ngắt toàn bộ thiết bị cũ.
-- Dữ liệu nằm ngoài Git checkout nên không bị xóa khi auto-deploy.
+- Shared clipboard with up to 30 items and 8,000 characters per item.
+- Upload and download files up to 25 MB, with drag and drop on desktop.
+- Pair devices using a QR code or a random 96-bit key.
+- The API requires a Bearer token; the server stores only the SHA-256 hash of the pairing key.
+- Rotate the key to disconnect all previously paired devices.
+- Data is stored outside the Git checkout, so auto-deploy does not delete it.
 
-## Chạy thử
+## Run locally
 
 ```bash
 npm install
@@ -19,21 +19,21 @@ npm test
 npm start
 ```
 
-Mở `http://localhost:4175`. Thiết bị đầu tiên chọn **Khởi tạo an toàn**, sau đó dùng QR để ghép thiết bị khác.
+Open `http://localhost:4175`. On the first device, select **Set up securely**, then use the QR code to pair other devices.
 
-## Deploy bằng HomeDroid
+## Deploy with HomeDroid
 
-| Trường | Giá trị |
+| Field | Value |
 | --- | --- |
-| Repository | URL HTTPS của repository này |
+| Repository | HTTPS URL of this repository |
 | Branch | `main` |
 | Port | `4175` |
-| Runtime | `Node.js` hoặc `Auto` |
-| Build command | để trống |
-| Start command | để trống (`npm start`) |
+| Runtime | `Node.js` or `Auto` |
+| Build command | leave blank |
+| Start command | leave blank (`npm start`) |
 
-HomeDroid truyền `$PORT` và `$HOST` cho server. Dữ liệu mặc định được lưu cạnh checkout tại `/srv/<deployment>-data`.
+HomeDroid passes `$PORT` and `$HOST` to the server. By default, data is stored beside the checkout at `/srv/<deployment>-data`.
 
-## An toàn
+## Security
 
-Chỉ dùng trên Wi‑Fi tin cậy hoặc qua Tailscale. Không public cổng `4175` trực tiếp ra Internet. Người có mã ghép nối có thể đọc, gửi và xóa mọi nội dung trong không gian này.
+Use only on trusted Wi‑Fi or through Tailscale. Do not expose port `4175` directly to the Internet. Anyone with the pairing key can read, send, and delete all content in this space.
